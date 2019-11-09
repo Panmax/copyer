@@ -1,41 +1,37 @@
 package main
 
 import (
-	"crypto/md5"
+	"copyer/utils"
 	"log"
 	"os"
 )
 
-var BufferSize = 1024 * 10 * 10
-
 func main() {
-	filepath := "/Users/jiapan/Downloads/test.js"
+	src := "/tmp/copyer/src.md"
+	dst := "/tmp/copyer/dst.md"
 
-	info, err := os.Stat(filepath)
+	info, err := os.Stat(src)
 	if err != nil {
 		log.Fatal(err)
 	}
 	size := info.Size()
 	log.Println(size)
 
-	file, err := os.Open(filepath)
+	srcFile, err := os.Open(src)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
+	defer srcFile.Close()
 
-	buffer := make([]byte, BufferSize)
-	file.Read(buffer)
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dstFile.Close()
 
-	md5N := md5.New()
-	log.Printf("%x\n",md5N.Sum(buffer))
+	utils.Chmod(srcFile, dstFile)
+	utils.Copy(srcFile, dstFile)
+	utils.ChModifyTime(srcFile, dstFile)
+	utils.RecordSum(srcFile, dstFile)
 
-
-
-	offset, _:=file.Seek(int64(-size),  2)
-	log.Println(offset)
-	buffer = make([]byte, BufferSize)
-	file.Read(buffer)
-
-	log.Printf("%x\n",md5N.Sum(buffer))
 }
