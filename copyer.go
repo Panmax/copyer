@@ -10,13 +10,6 @@ func main() {
 	src := "/tmp/copyer/src.md"
 	dst := "/tmp/copyer/dst.md"
 
-	info, err := os.Stat(src)
-	if err != nil {
-		log.Fatal(err)
-	}
-	size := info.Size()
-	log.Println(size)
-
 	srcFile, err := os.Open(src)
 	if err != nil {
 		log.Fatal(err)

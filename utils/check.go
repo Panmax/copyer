@@ -3,13 +3,15 @@ package utils
 import (
 	"crypto/md5"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-var BufferSize = 100000
-var SubSize = 32
+var BufferSize = 1024 * 1014
+var BlockSize = 1024 * 1014 * 100
 
 func RecordSum(srcFile, dstFile *os.File) (err error) {
 	sumFilePath := getSumPath(dstFile)
@@ -20,8 +22,7 @@ func RecordSum(srcFile, dstFile *os.File) (err error) {
 	}
 	defer sumFile.Close()
 
-	n, err := sumFile.WriteString(getSum(srcFile))
-	log.Println(n)
+	_, err = sumFile.WriteString(GetFileSum(srcFile))
 	return
 }
 
@@ -29,33 +30,27 @@ func getSumPath(file *os.File) string {
 	return fmt.Sprintf("%s/.copyer/%s.md5", filepath.Dir(file.Name()), filepath.Base(file.Name()))
 }
 
-func getSum(file *os.File) string {
-	stat, _ := file.Stat()
-	size := stat.Size()
-	log.Println(size)
+// 每 100M 的前 1M 作 md5 然后整体再 md5 一次
+func GetFileSum(file *os.File) string {
+	_, err := file.Seek(0, 0)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-	_, _ = file.Seek(0, 0)
-	md5N := md5.New()
+	md5Builder := strings.Builder{}
+	offset := 0
+	for {
+		buffer := make([]byte, BufferSize)
+		if n, err := file.ReadAt(buffer, int64(offset*BlockSize)); n <= 0 || (err != nil && err != io.EOF) {
+			if err != nil && err != io.EOF {
+				log.Fatalln(err)
+			}
+			break
+		}
 
-	bufferStart := make([]byte, BufferSize)
-	n, err := file.Read(bufferStart)
-	log.Println(n)
-	log.Println(err)
+		md5Builder.WriteString(fmt.Sprintf("%x", md5.Sum(buffer)))
+		offset += 1
+	}
 
-	_, _ = file.Seek(size/2, 0)
-	bufferMiddle := make([]byte, BufferSize)
-	n, err = file.Read(bufferMiddle)
-	log.Println(n)
-	log.Println(err)
-
-	_, _ = file.Seek(int64(-BufferSize), 2)
-	bufferEnd := make([]byte, BufferSize)
-	n, err = file.Read(bufferEnd)
-	log.Println(n)
-	log.Println(err)
-
-	return fmt.Sprintf("%s:%s:%s",
-		fmt.Sprintf("%x", md5N.Sum(bufferStart))[:SubSize],
-		fmt.Sprintf("%x", md5N.Sum(bufferMiddle))[:SubSize],
-		fmt.Sprintf("%x", md5N.Sum(bufferEnd))[:SubSize])
+	return fmt.Sprintf("%x", md5.Sum([]byte(md5Builder.String())))
 }
