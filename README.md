@@ -13,7 +13,19 @@ TODO
 
 ## 快速使用
 
-TODO
+```shell script
+# 将 /home/path/srcdir 目录中的内容全部文件拷贝到 /Volumes/path/dstdir 目录
+copyer -src=/home/path/srcdir/ -dst=/Volumes/path/dstdir/
+
+# 将 /home/path/srcfile 文件拷贝为 /Volumes/path 路径下的 dstfile 文件
+copyer -src=/home/path/srcfile -dst=/Volumes/path/dstfile
+
+# 校验 /Volumes/path/dstdir 目录下所有文件完整性
+copyer -verify=/Volumes/path/dstdir/
+
+# 校验 /Volumes/path/dstfile 文件的完整性
+copyer -verify=/Volumes/path/dstfile
+```
 
 ## 许可证
 
